@@ -1,0 +1,43 @@
+{
+  "name": "dashboard",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "preview": "vite preview",
+    "lint": "eslint",
+    "format": "prettier . --write",
+    "format-check": "prettier . --check",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@filament/react": "4.13.1",
+    "@vanilla-extract/css": "^1.20.1",
+    "clsx": "^2.1.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router": "^7.15.0"
+  },
+  "devDependencies": {
+    "@eslint/config-helpers": "^0.6.0",
+    "@eslint/js": "^10.0.1",
+    "@filament/vite-plugin": "4.0.8",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12",
+    "vite-plugin-checker": "^0.13.0",
+    "vitest": "^4.1.5"
+  }
+}

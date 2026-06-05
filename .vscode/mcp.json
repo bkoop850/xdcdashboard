@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "filament": {
+      "type": "http",
+      "url": "https://api.filament.rocks/mcp"
+    }
+  }
+}
