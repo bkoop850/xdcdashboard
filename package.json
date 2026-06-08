@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "deploy": "npm run build && cp dist/index.html dist/404.html && touch dist/.nojekyll && git -C dist add -A && git -C dist commit -m \"Deploy\" && git -C dist push origin gh-pages",
     "test": "vitest run",
     "preview": "vite preview",
     "lint": "eslint",
