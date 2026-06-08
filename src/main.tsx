@@ -6,7 +6,7 @@ import { StrictMode } from 'react';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/xdcdashboard">
       <App />
     </BrowserRouter>
   </StrictMode>

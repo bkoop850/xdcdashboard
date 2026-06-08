@@ -4,14 +4,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@filament/react/card';
-import { Item } from '@filament/react/common';
+import { Item, Section } from '@filament/react/common';
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from '@filament/react/dialog';
 import { FlexBox } from '@filament/react/layout';
-import { SplitButton } from '@filament/react/split-button';
+import { MenuButton } from '@filament/react/menu-button';
 import { Button } from '@filament/react/button';
 import { Heading, Text } from '@filament/react/text';
 import { clsx } from 'clsx';
@@ -20,8 +20,9 @@ import { useContext, useEffect, useState } from 'react';
 import { PageTitleProvider } from '~/providers';
 
 import {
+  businessClusters,
   levels,
-  telemetryModalData,
+  xdcImpactFactor,
   type DimensionData,
   type ImpactScore,
   type Kpi,
@@ -72,7 +73,7 @@ const DimensionCard = ({
 }) => (
   <Card
     className={clsx(styles.dimensionCard, onPress && styles.clickableCard)}
-    onClick={onPress}
+    onPress={onPress}
   >
     <CardHeader>
       <CardTitle>{dimension.title}</CardTitle>
@@ -85,8 +86,17 @@ const DimensionCard = ({
   </Card>
 );
 
-const ImpactScoreCard = ({ score }: { score: ImpactScore }) => (
-  <Card className={styles.impactCard}>
+const ImpactScoreCard = ({
+  score,
+  onPress,
+}: {
+  score: ImpactScore;
+  onPress?: () => void;
+}) => (
+  <Card
+    className={clsx(styles.impactCard, onPress && styles.clickableCard)}
+    onPress={onPress}
+  >
     <CardBody>
       <Text variant="reference-m" color="secondary" className={styles.impactLabel}>
         {score.label}
@@ -99,81 +109,251 @@ const ImpactScoreCard = ({ score }: { score: ImpactScore }) => (
       >
         {score.change}
       </Text>
+      {onPress && (
+        <Text variant="reference-s" color="secondary" className={styles.impactHint}>
+          View KPI build-up →
+        </Text>
+      )}
     </CardBody>
   </Card>
 );
 
-const TelemetryDialog = ({
-  isOpen,
+const HeroImpactCard = ({
+  score,
+  onPress,
+}: {
+  score: ImpactScore;
+  onPress?: () => void;
+}) => (
+  <Card
+    className={clsx(styles.heroCard, onPress && styles.clickableCard)}
+    onPress={onPress}
+  >
+    <CardBody>
+      <Text variant="reference-m" color="secondary" className={styles.heroLabel}>
+        {score.label}
+      </Text>
+      <div className={styles.heroValue}>{score.value}</div>
+      <Text
+        variant="reference-s"
+        color={score.direction === 'positive' ? 'signalSuccess' : 'signalError'}
+        className={styles.impactChange}
+      >
+        {score.change}
+      </Text>
+      {score.buildup && (
+        <Text variant="reference-s" color="secondary" className={styles.heroDescription}>
+          {score.buildup.description}
+        </Text>
+      )}
+      {onPress && (
+        <Text variant="reference-s" color="secondary" className={styles.impactHint}>
+          View KPI build-up →
+        </Text>
+      )}
+    </CardBody>
+  </Card>
+);
+
+const ImpactBuildupDialog = ({
+  score,
   onDismiss,
 }: {
-  isOpen: boolean;
+  score: ImpactScore | null;
   onDismiss: () => void;
 }) => (
-  <Dialog isOpen={isOpen} onDismiss={onDismiss} isDismissable showCloseButton>
-    <DialogTitle>UX Telemetry Deep Dive</DialogTitle>
+  <Dialog
+    isOpen={score !== null}
+    onDismiss={onDismiss}
+    isDismissable
+    showCloseButton
+  >
+    <DialogTitle>{score?.label} — KPI Build-up</DialogTitle>
     <DialogContent>
-      <div className={styles.modalSection}>
-        <div className={styles.modalSectionTitle}>Session Metrics</div>
-        <div className={styles.modalGrid}>
-          {telemetryModalData.sessionMetrics.map((item) => (
-            <div key={item.label} className={styles.modalStat}>
-              <Text variant="reference-s" color="secondary" className={styles.modalStatLabel}>
-                {item.label}
-              </Text>
-              <div className={styles.modalStatValue}>{item.value}</div>
+      {score?.buildup && (
+        <>
+          <div className={styles.modalSection}>
+            <div className={styles.modalSectionTitle}>
+              Strategic Outcome: {score.buildup.outcome}
             </div>
-          ))}
-        </div>
-      </div>
+            <Text variant="reference-s" color="secondary">
+              {score.buildup.description}
+            </Text>
+          </div>
 
-      <div className={styles.modalSection}>
-        <div className={styles.modalSectionTitle}>Performance Metrics</div>
-        <div className={styles.modalGrid}>
-          {telemetryModalData.performanceMetrics.map((item) => (
-            <div key={item.label} className={styles.modalStat}>
-              <Text variant="reference-s" color="secondary" className={styles.modalStatLabel}>
-                {item.label}
-              </Text>
-              <div className={styles.modalStatValue}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+          <div className={styles.modalSection}>
+            <div className={styles.modalSectionTitle}>How it is calculated</div>
+            <div className={styles.buildupFormula}>{score.buildup.formula}</div>
+          </div>
 
-      <div className={styles.modalSection}>
-        <div className={styles.modalSectionTitle}>User Engagement</div>
-        <div className={styles.modalGrid}>
-          {telemetryModalData.userEngagement.map((item) => (
-            <div key={item.label} className={styles.modalStat}>
-              <Text variant="reference-s" color="secondary" className={styles.modalStatLabel}>
-                {item.label}
-              </Text>
-              <div className={styles.modalStatValue}>{item.value}</div>
+          <div className={styles.modalSection}>
+            <div className={styles.modalSectionTitle}>Contributing dimensions</div>
+            <div className={styles.buildupList}>
+              {score.buildup.contributors.map((c) => (
+                <div key={c.dimension} className={styles.buildupRow}>
+                  <div className={styles.buildupRowHeader}>
+                    <span className={styles.buildupDimension}>{c.dimension}</span>
+                    <span className={styles.buildupWeight}>{c.weight}</span>
+                  </div>
+                  <Text variant="reference-s" color="secondary">
+                    {c.rationale}
+                  </Text>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          <div className={styles.modalSection}>
+            <div className={styles.modalSectionTitle}>Roll-up across levels</div>
+            <Text variant="reference-s" color="secondary">
+              {score.buildup.rollup}
+            </Text>
+          </div>
+        </>
+      )}
+    </DialogContent>
+  </Dialog>
+);
+
+const DimensionDetailDialog = ({
+  dimension,
+  onDismiss,
+}: {
+  dimension: DimensionData | null;
+  onDismiss: () => void;
+}) => (
+  <Dialog isOpen={dimension !== null} onDismiss={onDismiss} isDismissable showCloseButton>
+    <DialogTitle>{dimension?.title} — Detail</DialogTitle>
+    <DialogContent>
+      {dimension?.detail?.map((section) => (
+        <div key={section.title} className={styles.modalSection}>
+          <div className={styles.modalSectionTitle}>{section.title}</div>
+          <div className={styles.modalGrid}>
+            {section.stats.map((item) => (
+              <div key={item.label} className={styles.modalStat}>
+                <Text variant="reference-s" color="secondary" className={styles.modalStatLabel}>
+                  {item.label}
+                </Text>
+                <div className={styles.modalStatValue}>{item.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
     </DialogContent>
   </Dialog>
 );
 
 export const Dashboard = () => {
-  const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
-  const [activeLevel, setActiveLevel] = useState<string>('maturity');
+  const [detailDimension, setDetailDimension] = useState<DimensionData | null>(null);
+  const [buildupScore, setBuildupScore] = useState<ImpactScore | null>(null);
+  const [activeLevel, setActiveLevel] = useState<string>('snapshot');
+  const [hasSelectedDeepdive, setHasSelectedDeepdive] = useState(false);
+  const [selectedBu, setSelectedBu] = useState<string>('Ambulatory Monitoring & Diagnostics');
   const { setPageTitle } = useContext(PageTitleProvider);
+
+  const buUrlByName = new Map<string, string>();
+  businessClusters.forEach((cluster) => {
+    buUrlByName.set(cluster.name, cluster.url);
+    cluster.subBusinesses.forEach((sub) => buUrlByName.set(sub.name, sub.url));
+  });
+
+  const handleBuAction = (key: string) => {
+    const url = buUrlByName.get(key);
+    if (url) {
+      setSelectedBu(key);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   const currentLevel = levels.find((l) => l.id === activeLevel);
 
+  const impactLevelIds = ['maturity', 'philips', 'business', 'product'];
+  const isImpactActive = impactLevelIds.includes(activeLevel);
+
+  const deepdiveLabels: Record<string, string> = {
+    maturity: 'XDC Maturity',
+    philips: 'Philips Impact',
+    business: 'Business Unit Impact',
+    product: 'Project Impact',
+  };
+
   useEffect(() => {
-    setPageTitle(currentLevel?.appTitle ?? '');
-  }, [currentLevel, setPageTitle]);
+    setPageTitle('');
+  }, [activeLevel, setPageTitle]);
+
+  const renderSnapshot = () => {
+    const snapshotLevels = levels.filter(
+      (l) => l.id === 'maturity' || l.id === 'philips',
+    );
+    return (
+      <div className={styles.snapshotContainer}>
+        <HeroImpactCard
+          score={xdcImpactFactor}
+          onPress={() => setBuildupScore(xdcImpactFactor)}
+        />
+        {snapshotLevels.map((level) => (
+          <div key={level.id} className={styles.snapshotGroup}>
+            <Heading variant="heading-s" elementType="h2">
+              {level.label}
+            </Heading>
+            <div className={styles.impactScoresGrid}>
+              {level.impactScores.map((score) => (
+                <ImpactScoreCard
+                  key={score.label}
+                  score={score}
+                  onPress={score.buildup ? () => setBuildupScore(score) : undefined}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const renderLevelContent = (level: typeof levels[number]) => (
     <>
+      {(level.id === 'business' || level.id === 'product') && (
+        <FlexBox
+          alignItems="center"
+          justifyContent="end"
+          gap={12}
+          className={styles.buSelectorRow}
+        >
+          <MenuButton
+            variant="secondary"
+            buttonContent={selectedBu}
+            onAction={(key) => { if (key) handleBuAction(key as string); }}
+          >
+            {businessClusters.map((cluster) => (
+              <Section key={cluster.name} title={cluster.name}>
+                {[
+                  <Item key={cluster.name}>{cluster.name} — Overview</Item>,
+                  ...cluster.subBusinesses.map((sub) => (
+                    <Item key={sub.name}>{sub.name}</Item>
+                  )),
+                ]}
+              </Section>
+            ))}
+          </MenuButton>
+          {level.id === 'product' && (
+            <MenuButton
+              variant="secondary"
+              buttonContent="ECG reports"
+            >
+              {[]}
+            </MenuButton>
+          )}
+        </FlexBox>
+      )}
       <div className={styles.impactScoresGrid}>
         {level.impactScores.map((score) => (
-          <ImpactScoreCard key={score.label} score={score} />
+          <ImpactScoreCard
+            key={score.label}
+            score={score}
+            onPress={score.buildup ? () => setBuildupScore(score) : undefined}
+          />
         ))}
       </div>
       <div className={styles.dimensionsGrid}>
@@ -182,8 +362,8 @@ export const Dashboard = () => {
             key={dimension.title}
             dimension={dimension}
             onPress={
-              dimension.title === 'UX Telemetry'
-                ? () => setIsTelemetryOpen(true)
+              dimension.detail
+                ? () => setDetailDimension(dimension)
                 : undefined
             }
           />
@@ -197,34 +377,54 @@ export const Dashboard = () => {
       <Heading variant="heading-l" elementType="h1">XDC Impact</Heading>
 
       <FlexBox alignItems="center" gap={0} className={styles.tabBar}>
-        <div className={clsx(styles.tabItem, activeLevel === 'maturity' && styles.tabItemActive)}>
+        <div className={clsx(styles.tabItem, activeLevel === 'snapshot' && styles.tabItemActive)}>
           <Button
             variant="quiet"
-            onPress={() => setActiveLevel('maturity')}
+            onPress={() => {
+              setActiveLevel('snapshot');
+              setHasSelectedDeepdive(false);
+            }}
           >
-            Maturity
+            Impact Snapshot
           </Button>
         </div>
-        <div className={clsx(styles.tabItem, activeLevel !== 'maturity' && styles.tabItemActive)}>
-          <SplitButton
+        <div className={clsx(styles.tabItem, isImpactActive && styles.tabItemActive)}>
+          <MenuButton
             variant="quiet"
-            defaultSelectedKey="philips"
-            onAction={(key) => { if (key) setActiveLevel(key as string); }}
+            buttonContent={
+              isImpactActive && hasSelectedDeepdive
+                ? `Impact Deepdives: ${deepdiveLabels[activeLevel]}`
+                : 'Impact Deepdives'
+            }
+            onAction={(key) => {
+              if (key) {
+                setActiveLevel(key as string);
+                setHasSelectedDeepdive(true);
+              }
+            }}
           >
+            <Item key="maturity">XDC Maturity</Item>
             <Item key="philips">Philips Impact</Item>
-            <Item key="business">BU Impact</Item>
-            <Item key="product">Product Impact</Item>
-          </SplitButton>
+            <Item key="business">Business Unit Impact</Item>
+            <Item key="product">Project Impact</Item>
+          </MenuButton>
         </div>
       </FlexBox>
 
       <div className={styles.tabPanel}>
-        {currentLevel && renderLevelContent(currentLevel)}
+        {activeLevel === 'snapshot'
+          ? renderSnapshot()
+          : currentLevel && renderLevelContent(currentLevel)}
       </div>
 
-      <TelemetryDialog
-        isOpen={isTelemetryOpen}
-        onDismiss={() => setIsTelemetryOpen(false)}
+      <DimensionDetailDialog
+        dimension={detailDimension}
+        onDismiss={() => setDetailDimension(null)}
+      />
+
+      <ImpactBuildupDialog
+        score={buildupScore}
+        onDismiss={() => setBuildupScore(null)}
       />
     </div>
   );

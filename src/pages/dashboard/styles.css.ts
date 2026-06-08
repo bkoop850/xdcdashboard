@@ -44,6 +44,86 @@ export const impactChange = style({
   fontSize: '12px',
 });
 
+export const heroCard = style({
+  width: '100%',
+  borderTop: '4px solid var(--fil-color-brand)',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+  background:
+    'linear-gradient(135deg, var(--fil-color-background-subtle, #f4f6fb) 0%, var(--fil-color-background-primary, #ffffff) 70%)',
+});
+
+export const heroLabel = style({
+  fontSize: '13px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.6px',
+  fontWeight: 600,
+});
+
+export const heroValue = style({
+  fontSize: '64px',
+  fontWeight: 700,
+  lineHeight: 1,
+  marginTop: '12px',
+  marginBottom: '8px',
+  color: 'var(--fil-color-brand)',
+});
+
+export const heroDescription = style({
+  maxWidth: '640px',
+  marginTop: '4px',
+});
+
+export const impactHint = style({
+  display: 'block',
+  marginTop: '12px',
+  fontSize: '12px',
+  fontWeight: 500,
+  color: 'var(--fil-color-brand)',
+});
+
+export const buildupFormula = style({
+  fontFamily: 'var(--fil-font-family-mono, monospace)',
+  fontSize: '13px',
+  lineHeight: 1.5,
+  padding: '12px 14px',
+  borderRadius: '6px',
+  backgroundColor: 'var(--fil-color-background-subtle, #f4f4f4)',
+  border: '1px solid var(--fil-color-border-subtle, #e8e8e8)',
+});
+
+export const buildupList = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+});
+
+export const buildupRow = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+  paddingLeft: '12px',
+  borderLeft: '3px solid var(--fil-color-brand)',
+});
+
+export const buildupRowHeader = style({
+  display: 'flex',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: '12px',
+});
+
+export const buildupDimension = style({
+  fontSize: '14px',
+  fontWeight: 600,
+});
+
+export const buildupWeight = style({
+  fontSize: '12px',
+  fontWeight: 600,
+  color: 'var(--fil-color-brand)',
+  whiteSpace: 'nowrap',
+});
+
 export const dimensionsGrid = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
@@ -138,6 +218,22 @@ export const metricValue = style({
 
 export const tabPanel = style({
   paddingTop: '24px',
+});
+
+export const snapshotContainer = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '32px',
+});
+
+export const snapshotGroup = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+});
+
+export const buSelectorRow = style({
+  marginBottom: '16px',
 });
 
 export const tabBar = style({
