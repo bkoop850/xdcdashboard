@@ -8,11 +8,4 @@ export default defineConfig({
   base: '/xdcdashboard/',
   plugins: [filament(), checker({ typescript: true }), react()],
   resolve: { tsconfigPaths: true },
-  server: {
-    allowedHosts: true,
-    hmr: {
-      clientPort: 443,
-      protocol: 'wss',
-    },
-  },
 });

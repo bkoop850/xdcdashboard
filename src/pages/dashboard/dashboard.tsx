@@ -4,15 +4,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@filament/react/card';
-import { Item, Section } from '@filament/react/common';
 import {
   Dialog,
   DialogContent,
   DialogTitle,
 } from '@filament/react/dialog';
-import { FlexBox } from '@filament/react/layout';
-import { MenuButton } from '@filament/react/menu-button';
-import { Button } from '@filament/react/button';
 import { Heading, Text } from '@filament/react/text';
 import { clsx } from 'clsx';
 import { useContext, useEffect, useState } from 'react';
@@ -20,13 +16,16 @@ import { useContext, useEffect, useState } from 'react';
 import { PageTitleProvider } from '~/providers';
 
 import {
-  businessClusters,
-  levels,
-  xdcImpactFactor,
-  type DimensionData,
-  type ImpactScore,
-  type Kpi,
+  businessOutcomes,
+  capabilityDrivers,
+  capabilityEffectiveness,
+  qualityImpact,
+  type BusinessOutcome,
+  type CapabilityDriver,
+  type CapabilityEffectiveness,
   type KpiStatus,
+  type Metric,
+  type QualityImpact,
 } from './data';
 import * as styles from './styles.css';
 
@@ -42,172 +41,163 @@ const statusStyle: Record<KpiStatus, string> = {
   'off-track': styles.statusOffTrack,
 };
 
-const KpiItem = ({ kpi }: { kpi: Kpi }) => (
-  <div className={styles.kpiItem}>
-    <div className={styles.kpiHeader}>
-      <span className={styles.kpiName}>{kpi.name}</span>
-      <div className={styles.kpiStatusWrapper}>
-        <div className={clsx(styles.statusDot, statusStyle[kpi.status])} />
-        <span>{statusLabel[kpi.status]}</span>
+const metricItemStyle: Record<KpiStatus, string> = {
+  'on-track': styles.metricItemOnTrack,
+  'at-risk': styles.metricItemAtRisk,
+  'off-track': styles.metricItemOffTrack,
+};
+
+const MetricItem = ({ metric }: { metric: Metric }) => (
+  <div className={clsx(styles.metricItem, metricItemStyle[metric.status])}>
+    <div className={styles.metricHeader}>
+      <span className={styles.metricLabel}>{metric.label}</span>
+      <div className={styles.metricStatusWrapper}>
+        <div className={clsx(styles.statusDot, statusStyle[metric.status])} />
+        <span>{statusLabel[metric.status]}</span>
       </div>
     </div>
-    <div className={styles.kpiMetrics}>
-      <span>
-        <span className={styles.metricValue}>{kpi.currentValue}</span>{' '}
-        {kpi.currentLabel}
-      </span>
-      <span>
-        <span className={styles.metricValue}>{kpi.targetValue}</span>{' '}
-        {kpi.targetLabel}
-      </span>
+    <div className={styles.metricValue}>
+      {metric.before ? (
+        <>
+          <span className={styles.beforeValue}>{metric.before}</span>
+          <span className={styles.arrow}>→</span>
+          <span>{metric.value}</span>
+        </>
+      ) : (
+        metric.value
+      )}
     </div>
   </div>
 );
 
-const DimensionCard = ({
-  dimension,
+/* ── Cards ── */
+
+const OutcomeCard = ({
+  outcome,
   onPress,
 }: {
-  dimension: DimensionData;
-  onPress?: () => void;
+  outcome: BusinessOutcome;
+  onPress: () => void;
 }) => (
-  <Card
-    className={clsx(styles.dimensionCard, onPress && styles.clickableCard)}
-    onPress={onPress}
-  >
+  <Card className={clsx(styles.outcomeCard, styles.clickableCard)} onPress={onPress}>
+    <CardBody>
+      <Text variant="reference-m" color="secondary" className={styles.outcomeLabel}>
+        {outcome.name}
+      </Text>
+      <div className={styles.outcomeValue}>{outcome.value}</div>
+      <Text
+        variant="reference-s"
+        color={outcome.direction === 'positive' ? 'signalSuccess' : 'signalError'}
+      >
+        {outcome.change}
+      </Text>
+    </CardBody>
+  </Card>
+);
+
+const QualityImpactCard = ({
+  item,
+  onPress,
+}: {
+  item: QualityImpact;
+  onPress: () => void;
+}) => {
+  const capName = capabilityEffectiveness.find((c) => c.id === item.capability)?.name ?? '';
+  return (
+    <Card className={clsx(styles.effectivenessCard, styles.clickableCard)} onPress={onPress}>
+      <CardHeader>
+        <CardTitle>{capName}</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <div className={styles.metricsGrid}>
+          {item.metrics.map((metric) => (
+            <MetricItem key={metric.label} metric={metric} />
+          ))}
+        </div>
+      </CardBody>
+    </Card>
+  );
+};
+
+const EffectivenessCard = ({
+  capability,
+  onPress,
+}: {
+  capability: CapabilityEffectiveness;
+  onPress: () => void;
+}) => (
+  <Card className={clsx(styles.effectivenessCard, styles.clickableCard)} onPress={onPress}>
     <CardHeader>
-      <CardTitle>{dimension.title}</CardTitle>
+      <CardTitle>{capability.name}</CardTitle>
     </CardHeader>
     <CardBody>
-      {dimension.kpis.map((kpi) => (
-        <KpiItem key={kpi.name} kpi={kpi} />
+      <div className={styles.metricsGrid}>
+        {capability.metrics.map((metric) => (
+          <MetricItem key={metric.label} metric={metric} />
+        ))}
+      </div>
+    </CardBody>
+  </Card>
+);
+
+const DriverCard = ({
+  driver,
+  onPress,
+}: {
+  driver: CapabilityDriver;
+  onPress: () => void;
+}) => (
+  <Card className={clsx(styles.driverCard, styles.clickableCard)} onPress={onPress}>
+    <CardHeader>
+      <CardTitle>{driver.name}</CardTitle>
+    </CardHeader>
+    <CardBody>
+      {driver.metrics.map((metric) => (
+        <MetricItem key={metric.label} metric={metric} />
       ))}
     </CardBody>
   </Card>
 );
 
-const ImpactScoreCard = ({
-  score,
-  onPress,
-}: {
-  score: ImpactScore;
-  onPress?: () => void;
-}) => (
-  <Card
-    className={clsx(styles.impactCard, onPress && styles.clickableCard)}
-    onPress={onPress}
-  >
-    <CardBody>
-      <Text variant="reference-m" color="secondary" className={styles.impactLabel}>
-        {score.label}
-      </Text>
-      <div className={styles.impactValue}>{score.value}</div>
-      <Text
-        variant="reference-s"
-        color={score.direction === 'positive' ? 'signalSuccess' : 'signalError'}
-        className={styles.impactChange}
-      >
-        {score.change}
-      </Text>
-      {onPress && (
-        <Text variant="reference-s" color="secondary" className={styles.impactHint}>
-          View KPI build-up →
-        </Text>
-      )}
-    </CardBody>
-  </Card>
-);
+/* ── Dialogs ── */
 
-const HeroImpactCard = ({
-  score,
-  onPress,
-}: {
-  score: ImpactScore;
-  onPress?: () => void;
-}) => (
-  <Card
-    className={clsx(styles.heroCard, onPress && styles.clickableCard)}
-    onPress={onPress}
-  >
-    <CardBody>
-      <Text variant="reference-m" color="secondary" className={styles.heroLabel}>
-        {score.label}
-      </Text>
-      <div className={styles.heroValue}>{score.value}</div>
-      <Text
-        variant="reference-s"
-        color={score.direction === 'positive' ? 'signalSuccess' : 'signalError'}
-        className={styles.impactChange}
-      >
-        {score.change}
-      </Text>
-      {score.buildup && (
-        <Text variant="reference-s" color="secondary" className={styles.heroDescription}>
-          {score.buildup.description}
-        </Text>
-      )}
-      {onPress && (
-        <Text variant="reference-s" color="secondary" className={styles.impactHint}>
-          View KPI build-up →
-        </Text>
-      )}
-    </CardBody>
-  </Card>
-);
-
-const ImpactBuildupDialog = ({
-  score,
+const OutcomeDialog = ({
+  outcome,
   onDismiss,
 }: {
-  score: ImpactScore | null;
+  outcome: BusinessOutcome | null;
   onDismiss: () => void;
 }) => (
-  <Dialog
-    isOpen={score !== null}
-    onDismiss={onDismiss}
-    isDismissable
-    showCloseButton
-  >
-    <DialogTitle>{score?.label} — KPI Build-up</DialogTitle>
+  <Dialog isOpen={outcome !== null} onDismiss={onDismiss} isDismissable showCloseButton>
+    <DialogTitle>{outcome?.name}</DialogTitle>
     <DialogContent>
-      {score?.buildup && (
+      {outcome && (
         <>
-          <div className={styles.modalSection}>
-            <div className={styles.modalSectionTitle}>
-              Strategic Outcome: {score.buildup.outcome}
-            </div>
-            <Text variant="reference-s" color="secondary">
-              {score.buildup.description}
+          <div className={styles.dialogMetric}>
+            <div className={styles.dialogMetricValue}>{outcome.value}</div>
+            <Text
+              variant="reference-s"
+              color={outcome.direction === 'positive' ? 'signalSuccess' : 'signalError'}
+            >
+              {outcome.change}
             </Text>
           </div>
-
-          <div className={styles.modalSection}>
-            <div className={styles.modalSectionTitle}>How it is calculated</div>
-            <div className={styles.buildupFormula}>{score.buildup.formula}</div>
-          </div>
-
-          <div className={styles.modalSection}>
-            <div className={styles.modalSectionTitle}>Contributing dimensions</div>
-            <div className={styles.buildupList}>
-              {score.buildup.contributors.map((c) => (
-                <div key={c.dimension} className={styles.buildupRow}>
-                  <div className={styles.buildupRowHeader}>
-                    <span className={styles.buildupDimension}>{c.dimension}</span>
-                    <span className={styles.buildupWeight}>{c.weight}</span>
-                  </div>
-                  <Text variant="reference-s" color="secondary">
-                    {c.rationale}
-                  </Text>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className={styles.modalSection}>
-            <div className={styles.modalSectionTitle}>Roll-up across levels</div>
+          <div className={styles.dialogSection}>
             <Text variant="reference-s" color="secondary">
-              {score.buildup.rollup}
+              {outcome.description}
             </Text>
+          </div>
+          <div className={styles.dialogSection}>
+            <div className={styles.dialogSectionTitle}>Contributed to by</div>
+            <div className={styles.dialogChips}>
+              {qualityImpact
+                .filter((qi) => qi.contributesTo.includes(outcome.id))
+                .map((qi) => (
+                  <span key={qi.id} className={styles.dialogChip}>
+                    {capabilityEffectiveness.find((c) => c.id === qi.capability)?.name}
+                  </span>
+                ))}
+            </div>
           </div>
         </>
       )}
@@ -215,217 +205,242 @@ const ImpactBuildupDialog = ({
   </Dialog>
 );
 
-const DimensionDetailDialog = ({
-  dimension,
+const QualityDialog = ({
+  item,
   onDismiss,
 }: {
-  dimension: DimensionData | null;
+  item: QualityImpact | null;
+  onDismiss: () => void;
+}) => {
+  const capName = item
+    ? capabilityEffectiveness.find((c) => c.id === item.capability)?.name ?? ''
+    : '';
+  return (
+    <Dialog isOpen={item !== null} onDismiss={onDismiss} isDismissable showCloseButton>
+      <DialogTitle>{capName} — Quality Impact</DialogTitle>
+      <DialogContent>
+        {item && (
+          <>
+            <div className={styles.dialogSection}>
+              {item.metrics.map((metric) => (
+                <div key={metric.label}>
+                  <MetricItem metric={metric} />
+                  {metric.description && (
+                    <div className={styles.metricDescription}>{metric.description}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className={styles.dialogSection}>
+              <div className={styles.dialogSectionTitle}>Contributes to</div>
+              <div className={styles.dialogChips}>
+                {item.contributesTo.map((id) => (
+                  <span key={id} className={styles.dialogChip}>
+                    {businessOutcomes.find((o) => o.id === id)?.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const EffectivenessDialog = ({
+  capability,
+  onDismiss,
+}: {
+  capability: CapabilityEffectiveness | null;
   onDismiss: () => void;
 }) => (
-  <Dialog isOpen={dimension !== null} onDismiss={onDismiss} isDismissable showCloseButton>
-    <DialogTitle>{dimension?.title} — Detail</DialogTitle>
+  <Dialog isOpen={capability !== null} onDismiss={onDismiss} isDismissable showCloseButton>
+    <DialogTitle>{capability?.name} — Effectiveness Impact</DialogTitle>
     <DialogContent>
-      {dimension?.detail?.map((section) => (
-        <div key={section.title} className={styles.modalSection}>
-          <div className={styles.modalSectionTitle}>{section.title}</div>
-          <div className={styles.modalGrid}>
-            {section.stats.map((item) => (
-              <div key={item.label} className={styles.modalStat}>
-                <Text variant="reference-s" color="secondary" className={styles.modalStatLabel}>
-                  {item.label}
-                </Text>
-                <div className={styles.modalStatValue}>{item.value}</div>
+      {capability && (
+        <>
+          <div className={styles.dialogSection}>
+            <Text variant="reference-s" color="secondary" className={styles.dialogQuestion}>
+              {capability.question}
+            </Text>
+          </div>
+          <div className={styles.dialogSection}>
+            {capability.metrics.map((metric) => (
+              <div key={metric.label}>
+                <MetricItem metric={metric} />
+                {metric.description && (
+                  <div className={styles.metricDescription}>{metric.description}</div>
+                )}
               </div>
             ))}
           </div>
-        </div>
-      ))}
+          <div className={styles.dialogSection}>
+            <div className={styles.dialogSectionTitle}>Contributes to</div>
+            <div className={styles.dialogChips}>
+              {capability.contributesTo.map((id) => {
+                const qi = qualityImpact.find((q) => q.id === id);
+                if (qi) {
+                  const name = capabilityEffectiveness.find((c) => c.id === qi.capability)?.name;
+                  return (
+                    <span key={id} className={styles.dialogChip}>
+                      {name} Quality Impact
+                    </span>
+                  );
+                }
+                return (
+                  <span key={id} className={styles.dialogChip}>
+                    {businessOutcomes.find((o) => o.id === id)?.name}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </DialogContent>
   </Dialog>
 );
 
+const DriverDialog = ({
+  driver,
+  onDismiss,
+}: {
+  driver: CapabilityDriver | null;
+  onDismiss: () => void;
+}) => (
+  <Dialog isOpen={driver !== null} onDismiss={onDismiss} isDismissable showCloseButton>
+    <DialogTitle>{driver?.name}</DialogTitle>
+    <DialogContent>
+      {driver && (
+        <>
+          <div className={styles.dialogSection}>
+            <Text variant="reference-s" color="secondary">
+              {driver.explanation}
+            </Text>
+          </div>
+          <div className={styles.dialogSection}>
+            {driver.metrics.map((metric) => (
+              <MetricItem key={metric.label} metric={metric} />
+            ))}
+          </div>
+          <div className={styles.dialogSection}>
+            <div className={styles.dialogSectionTitle}>Drives</div>
+            <div className={styles.dialogChips}>
+              <span className={styles.dialogChip}>
+                {capabilityEffectiveness.find((c) => c.id === driver.capability)?.name}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+    </DialogContent>
+  </Dialog>
+);
+
+/* ── Arrow ── */
+
+const ChainArrow = () => (
+  <div className={styles.chainArrow}>
+    <div className={styles.arrowLine} />
+    
+    <div className={styles.arrowHead}>▲</div>
+  </div>
+);
+
+/* ── Main ── */
+
 export const Dashboard = () => {
-  const [detailDimension, setDetailDimension] = useState<DimensionData | null>(null);
-  const [buildupScore, setBuildupScore] = useState<ImpactScore | null>(null);
-  const [activeLevel, setActiveLevel] = useState<string>('snapshot');
-  const [hasSelectedDeepdive, setHasSelectedDeepdive] = useState(false);
-  const [selectedBu, setSelectedBu] = useState<string>('Ambulatory Monitoring & Diagnostics');
   const { setPageTitle } = useContext(PageTitleProvider);
-
-  const buUrlByName = new Map<string, string>();
-  businessClusters.forEach((cluster) => {
-    buUrlByName.set(cluster.name, cluster.url);
-    cluster.subBusinesses.forEach((sub) => buUrlByName.set(sub.name, sub.url));
-  });
-
-  const handleBuAction = (key: string) => {
-    const url = buUrlByName.get(key);
-    if (url) {
-      setSelectedBu(key);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const currentLevel = levels.find((l) => l.id === activeLevel);
-
-  const impactLevelIds = ['maturity', 'philips', 'business', 'product'];
-  const isImpactActive = impactLevelIds.includes(activeLevel);
-
-  const deepdiveLabels: Record<string, string> = {
-    maturity: 'XDC Maturity',
-    philips: 'Philips Impact',
-    business: 'Business Unit Impact',
-    product: 'Project Impact',
-  };
+  const [selectedOutcome, setSelectedOutcome] = useState<BusinessOutcome | null>(null);
+  const [selectedQuality, setSelectedQuality] = useState<QualityImpact | null>(null);
+  const [selectedEffectiveness, setSelectedEffectiveness] = useState<CapabilityEffectiveness | null>(null);
+  const [selectedDriver, setSelectedDriver] = useState<CapabilityDriver | null>(null);
+  const [driversExpanded, setDriversExpanded] = useState(false);
 
   useEffect(() => {
     setPageTitle('');
-  }, [activeLevel, setPageTitle]);
-
-  const renderSnapshot = () => {
-    const snapshotLevels = levels.filter(
-      (l) => l.id === 'maturity' || l.id === 'philips',
-    );
-    return (
-      <div className={styles.snapshotContainer}>
-        <HeroImpactCard
-          score={xdcImpactFactor}
-          onPress={() => setBuildupScore(xdcImpactFactor)}
-        />
-        {snapshotLevels.map((level) => (
-          <div key={level.id} className={styles.snapshotGroup}>
-            <Heading variant="heading-s" elementType="h2">
-              {level.label}
-            </Heading>
-            <div className={styles.impactScoresGrid}>
-              {level.impactScores.map((score) => (
-                <ImpactScoreCard
-                  key={score.label}
-                  score={score}
-                  onPress={score.buildup ? () => setBuildupScore(score) : undefined}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderLevelContent = (level: typeof levels[number]) => (
-    <>
-      {(level.id === 'business' || level.id === 'product') && (
-        <FlexBox
-          alignItems="center"
-          justifyContent="end"
-          gap={12}
-          className={styles.buSelectorRow}
-        >
-          <MenuButton
-            variant="secondary"
-            buttonContent={selectedBu}
-            onAction={(key) => { if (key) handleBuAction(key as string); }}
-          >
-            {businessClusters.map((cluster) => (
-              <Section key={cluster.name} title={cluster.name}>
-                {[
-                  <Item key={cluster.name}>{cluster.name} — Overview</Item>,
-                  ...cluster.subBusinesses.map((sub) => (
-                    <Item key={sub.name}>{sub.name}</Item>
-                  )),
-                ]}
-              </Section>
-            ))}
-          </MenuButton>
-          {level.id === 'product' && (
-            <MenuButton
-              variant="secondary"
-              buttonContent="ECG reports"
-            >
-              {[]}
-            </MenuButton>
-          )}
-        </FlexBox>
-      )}
-      <div className={styles.impactScoresGrid}>
-        {level.impactScores.map((score) => (
-          <ImpactScoreCard
-            key={score.label}
-            score={score}
-            onPress={score.buildup ? () => setBuildupScore(score) : undefined}
-          />
-        ))}
-      </div>
-      <div className={styles.dimensionsGrid}>
-        {level.dimensions.map((dimension) => (
-          <DimensionCard
-            key={dimension.title}
-            dimension={dimension}
-            onPress={
-              dimension.detail
-                ? () => setDetailDimension(dimension)
-                : undefined
-            }
-          />
-        ))}
-      </div>
-    </>
-  );
+  }, [setPageTitle]);
 
   return (
     <div className={styles.page}>
-      <Heading variant="heading-l" elementType="h1">XDC Impact</Heading>
-
-      <FlexBox alignItems="center" gap={0} className={styles.tabBar}>
-        <div className={clsx(styles.tabItem, activeLevel === 'snapshot' && styles.tabItemActive)}>
-          <Button
-            variant="quiet"
-            onPress={() => {
-              setActiveLevel('snapshot');
-              setHasSelectedDeepdive(false);
-            }}
-          >
-            Impact Snapshot
-          </Button>
+      <Heading variant="heading-l" elementType="h1" className={styles.pageTitle}>XDC Impact</Heading>
+      {/* Benefits for Philips */}
+      <section className={styles.layerSection}>
+        <Heading variant="heading-s" elementType="h2">
+          Benefits for Philips
+        </Heading>
+        <div className={styles.outcomesGrid}>
+          {businessOutcomes.map((outcome) => (
+            <OutcomeCard key={outcome.id} outcome={outcome} onPress={() => setSelectedOutcome(outcome)} />
+          ))}
         </div>
-        <div className={clsx(styles.tabItem, isImpactActive && styles.tabItemActive)}>
-          <MenuButton
-            variant="quiet"
-            buttonContent={
-              isImpactActive && hasSelectedDeepdive
-                ? `Impact Deepdives: ${deepdiveLabels[activeLevel]}`
-                : 'Impact Deepdives'
-            }
-            onAction={(key) => {
-              if (key) {
-                setActiveLevel(key as string);
-                setHasSelectedDeepdive(true);
-              }
-            }}
-          >
-            <Item key="maturity">XDC Maturity</Item>
-            <Item key="philips">Philips Impact</Item>
-            <Item key="business">Business Unit Impact</Item>
-            <Item key="product">Project Impact</Item>
-          </MenuButton>
+      </section>
+
+      <ChainArrow />
+
+      {/* Quality Impact */}
+      <section className={styles.layerSection}>
+        <Heading variant="heading-s" elementType="h2">
+          Quality Impact
+        </Heading>
+        <div className={styles.effectivenessGrid}>
+          {qualityImpact.map((item) => (
+            <QualityImpactCard key={item.id} item={item} onPress={() => setSelectedQuality(item)} />
+          ))}
         </div>
-      </FlexBox>
+      </section>
 
-      <div className={styles.tabPanel}>
-        {activeLevel === 'snapshot'
-          ? renderSnapshot()
-          : currentLevel && renderLevelContent(currentLevel)}
-      </div>
+      <ChainArrow />
 
-      <DimensionDetailDialog
-        dimension={detailDimension}
-        onDismiss={() => setDetailDimension(null)}
-      />
+      {/* Effectiveness Impact */}
+      <section className={styles.layerSection}>
+        <Heading variant="heading-s" elementType="h2">
+          Effectiveness Impact
+        </Heading>
+        <div className={styles.effectivenessGrid}>
+          {capabilityEffectiveness.map((capability) => (
+            <EffectivenessCard key={capability.id} capability={capability} onPress={() => setSelectedEffectiveness(capability)} />
+          ))}
+        </div>
+      </section>
 
-      <ImpactBuildupDialog
-        score={buildupScore}
-        onDismiss={() => setBuildupScore(null)}
-      />
+      <ChainArrow />
+
+      {/* Impact Drivers */}
+      <section className={styles.layerSection}>
+        <div className={styles.sectionHeaderClickable} onClick={() => setDriversExpanded((v) => !v)}>
+          <Heading variant="heading-s" elementType="h2">
+            Impact Drivers {driversExpanded ? '▴' : '▾'}
+          </Heading>
+        </div>
+        {driversExpanded && (
+          <div>
+            {capabilityEffectiveness.map((capability) => {
+              const drivers = capabilityDrivers.filter((d) => d.capability === capability.id);
+              if (drivers.length === 0) return null;
+              return (
+                <div key={capability.id} className={styles.driverGroup}>
+                  <Heading variant="heading-s" elementType="h3">
+                    {capability.name}
+                  </Heading>
+                  <div className={styles.driversGrid}>
+                    {drivers.map((driver) => (
+                      <DriverCard key={driver.id} driver={driver} onPress={() => setSelectedDriver(driver)} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Dialogs */}
+      <OutcomeDialog outcome={selectedOutcome} onDismiss={() => setSelectedOutcome(null)} />
+      <QualityDialog item={selectedQuality} onDismiss={() => setSelectedQuality(null)} />
+      <EffectivenessDialog capability={selectedEffectiveness} onDismiss={() => setSelectedEffectiveness(null)} />
+      <DriverDialog driver={selectedDriver} onDismiss={() => setSelectedDriver(null)} />
     </div>
   );
 };
